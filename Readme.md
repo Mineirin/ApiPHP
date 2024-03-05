@@ -1,0 +1,1 @@
+Projeto de api em php usando documentação swagger, feita para o cliente https://ethosbrasil.com.br
