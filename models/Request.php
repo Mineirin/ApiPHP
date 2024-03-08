@@ -120,4 +120,100 @@ class Request
     {
         $this->connection = $db;
     }
+
+    /**
+     * @OA\Post(
+     *     path="/api/auth",
+     *     summary="Autenticação do usuário",
+     *     tags={"Security"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\MediaType(
+     *             mediaType="application/json",
+     *             @OA\Schema(
+     *                 @OA\Property(property="userName", type="string", example="seu_usuario"),
+     *                 @OA\Property(property="password", type="string", example="sua_senha")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response="200", description="Token gerado com sucesso"),
+     *     @OA\Response(response="401", description="Credenciais inválidas")
+     * )
+     */
+    public function auth()
+    {
+
+
+        try {
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                $jsonData = json_decode(file_get_contents("php://input"));
+
+                if ($jsonData && isset($jsonData->userName, $jsonData->password)) {
+                    $userName = $jsonData->userName;
+                    $password = $jsonData->password;
+
+                    $userId = $this->authenticateUser($userName, $password);
+
+                    if ($userId !== null) {
+                        $issueDate = time();
+                        $expirationDate = $issueDate + 3600;
+                        $notBeforeDate = $issueDate;
+
+                        $payload = [
+                            "iss" => "http://localhost/api/",
+                            "aud" => "http://localhost",
+                            "iat" => $issueDate,
+                            "nbf" => $notBeforeDate,
+                            "exp" => $expirationDate,
+                            "userName" => $userName,
+                            "userId" => $userId,
+                        ];
+
+                        $jwtGeneratedToken = JWT::encode($payload, $this->key, 'HS256');
+
+                        echo json_encode([
+                            'token' => $jwtGeneratedToken,
+                            'expires' => $expirationDate
+                        ]);
+                        exit;
+                    } else {
+                        http_response_code(401);
+                        echo json_encode([
+                            'error' => 'Credenciais inválidas'
+                        ]);
+                        exit;
+                    }
+                }
+            }
+
+            http_response_code(400);
+            echo json_encode([
+                'error' => 'Formato de dados inválido'
+            ]);
+            exit;
+        } catch (PDOException $e) {
+            echo $e->getMessage();
+            return false;
+        }
+    }
+
+    private function authenticateUser($userName, $password)
+    {
+        try {
+            // Substitua este bloco com sua lógica real de consulta ao banco de dados
+            $query = 'SELECT id FROM usuarios WHERE usuario = :userName AND senha = :password';
+            $requestTicketDetails = $this->connection->prepare($query);
+            $requestTicketDetails->bindParam(':userName', $userName, PDO::PARAM_STR);
+            $requestTicketDetails->bindParam(':password', $password, PDO::PARAM_STR);
+            $requestTicketDetails->execute();
+
+            $result = $requestTicketDetails->fetch(PDO::FETCH_ASSOC);
+
+            return $result ? $result['id'] : null;
+        } catch (PDOException $e) {
+            // Lida com erros de consulta ao banco de dados
+            echo 'Error: ' . $e->getMessage();
+            return null;
+        }
+    }
 }
