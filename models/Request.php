@@ -948,4 +948,84 @@ class Request
             return false;
         }
     }
+
+    /**
+     * @OA\Post(
+     *     path="/api/Upgrade",
+     *     summary="Upgrade ticket",
+     *     tags={"Posts"},
+     *     @OA\RequestBody(
+     *         @OA\MediaType(
+     *             mediaType="application/json",
+     *             @OA\Schema(
+     *                 @OA\Property(property="ticketID", type="string"),
+     *                 @OA\Property(property="partNumber", type="string"),
+     *                 @OA\Property(property="urgencyCode", type="string"),
+     *                 @OA\Property(property="geolocation", type="string"),
+     *                 @OA\Property(property="sysRetRefNumber", type="string"),
+     *                 @OA\Property(property="originalDataElements", type="string"),
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response="200", description="The data"),
+     *     @OA\Response(response="404", description="Not Found"),
+     *     security={ {"bearerToken": {}}}
+     * )
+     */
+    public function upgrade($params)
+    {
+        try {
+            $headers = getallheaders();
+
+            if (isset($headers['Authorization'])) {
+                $token = trim(str_ireplace('Bearer', '', $headers['Authorization']));
+                try {
+                    $decoded = JWT::decode($token, new Key($this->key, 'HS256'));
+                    if (isset($decoded->userName)) {
+                        $this->connection->beginTransaction();
+
+                        $sql_ticket = "UPDATE ticket SET 
+                        originalDataElements = :originalDataElements,
+                        sysRetRefNumber = :sysRetRefNumber,
+                        geolocation = :geolocation
+                        WHERE ticketID = :ticketID";
+
+                        $stmt_ticket = $this->connection->prepare($sql_ticket);
+                        $stmt_ticket->bindValue(':originalDataElements', $params['originalDataElements']);
+                        $stmt_ticket->bindValue(':sysRetRefNumber', $params['sysRetRefNumber']);
+                        $stmt_ticket->bindValue(':geolocation', $params['geolocation']);
+                        $stmt_ticket->bindValue(':ticketID', $params['ticketID']);
+                        $stmt_ticket->execute();
+
+                        $sql_ticketdetails = "UPDATE ticketdetails SET 
+                                        partNumber = :partNumber,
+                                        urgencyCode = :urgencyCode
+                                        WHERE ticket_id = :ticket_id";
+
+                        $stmt_ticketdetails = $this->connection->prepare($sql_ticketdetails);
+                        $stmt_ticketdetails->bindValue(':partNumber', $params['partNumber']);
+                        $stmt_ticketdetails->bindValue(':urgencyCode', $params['urgencyCode']);
+                        $stmt_ticketdetails->bindValue(':ticket_id', $params['ticketID']);
+                        $stmt_ticketdetails->execute();
+                        var_dump($stmt_ticketdetails->rowCount());
+
+                        $this->connection->commit();
+                        return true;
+                    } else {
+                        return false;
+                    }
+                } catch (Exception $e) {
+                    echo 'Erro ao decodificar o token: ' . $e->getMessage();
+                    return false;
+                }
+            } else {
+                http_response_code(401);
+                echo 'Credenciais Inválidas';
+                return false;
+            }
+        } catch (PDOException $e) {
+            echo $e->getMessage();
+            return false;
+        }
+    }
 }
