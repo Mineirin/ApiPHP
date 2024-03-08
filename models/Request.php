@@ -142,8 +142,6 @@ class Request
      */
     public function auth()
     {
-
-
         try {
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $jsonData = json_decode(file_get_contents("php://input"));
