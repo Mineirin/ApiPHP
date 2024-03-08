@@ -1,0 +1,36 @@
+RewriteEngine On
+
+RewriteBase /api/
+RewriteRule ^$ /documentation [L]
+# Configurações de CORS
+Header always set Access-Control-Allow-Origin "*"
+Header always set Access-Control-Allow-Methods "POST, GET, OPTIONS, DELETE, PUT"
+Header always set Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+
+# Redirecionar de /api/documentation/api.php para /api/documentation/api
+RewriteCond %{THE_REQUEST} \s/+(.+?)\.php [NC]
+RewriteRule ^ /%1 [R=302,L,NE]
+
+# Lidar com URLs da API
+RewriteRule ^api/([^/]+)/?$ api/$1.php [L]
+
+# Redirecionar para a raiz para arquivos auth.php e Order.php
+RewriteRule ^auth$ auth.php [L]
+RewriteRule ^order$ Order.php [L]
+RewriteRule ^cancel$ Cancel.php [L]
+RewriteRule ^upgrade$ Upgrade.php [L]
+
+# Remover extensão .php e forçar trailing slash
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}\.php -f
+RewriteRule ^(.+?)/?$ $1.php [L]
+
+# Redirecionar URLs com trailing slash para URLs sem trailing slash
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.+)/$ /$1 [L,R=301]
+
+# Redirecionar URLs sem extensão para URLs com extensão
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}\.php -f
+RewriteCond %{REQUEST_URI} !/$
+RewriteRule ^(.*?[^/])$ /$1/ [L,R=301]
