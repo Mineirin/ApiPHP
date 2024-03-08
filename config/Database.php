@@ -1,10 +1,10 @@
 <?php
 
 class Database{
-    private $host = 'dbethos.mysql.dbaas.com.br';
-    private $dbname = 'dbethos';
-    private $username = 'dbethos';
-    private $password = 'Ethos2023@';
+    private $host = 'localhost';
+    private $dbname = 'seu_banco';
+    private $username = 'nome_banco';
+    private $password = 'sua_senha';
     private $connection = null;
 
     public function connect(){
