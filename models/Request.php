@@ -860,4 +860,92 @@ class Request
             return false;
         }
     }
+
+     /**
+     * @OA\Post(
+     *     path="/api/Cancel",
+     *     summary="Cancela tickets",
+     *     tags={"Posts"},
+     *     @OA\RequestBody(
+     *         @OA\MediaType(
+     *             mediaType="application/json",
+     *             @OA\Schema(
+     *                 @OA\Property(property="ticketID", type="string"),
+     *                 @OA\Property(property="dateTimeCancelTransmission", type="string"),
+     *                 @OA\Property(property="dateTimeTransaction", type="string"),
+     *                 @OA\Property(property="originalDataElements", type="string"),
+     *                 @OA\Property(property="sysRetRefNumber", type="string"),
+     *                 @OA\Property(property="idMotiveCancel", type="string"),
+     *                 @OA\Property(property="descriptionMotiveCancel", type="string"),
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response="200", description="The data"),
+     *     @OA\Response(response="404", description="Not Found"),
+     *     security={ {"bearerToken": {}}}
+     * )
+     */
+    public function cancel($params)
+    {
+        try {
+            $headers = getallheaders();
+
+            if (isset($headers['Authorization'])) {
+                $token = trim(str_ireplace('Bearer', '', $headers['Authorization']));
+                try {
+                    $decoded = JWT::decode($token, new Key($this->key, 'HS256'));
+                    if (isset($decoded->userName)) {
+                        $this->connection->beginTransaction();
+
+                        $sql_ticket = "UPDATE ticket SET 
+                                    dateTimeCancelTransmission = :dateTimeCancelTransmission,
+                                    dateTimeTransaction = :dateTimeTransaction,
+                                    originalDataElements = :originalDataElements,
+                                    sysRetRefNumber = :sysRetRefNumber,
+                                    idMotiveCancel = :idMotiveCancel,
+                                    descriptionMotiveCancel = :descriptionMotiveCancel
+                                    WHERE ticketID = :ticketID";
+
+                        $stmt_ticket = $this->connection->prepare($sql_ticket);
+                        $success_ticket = $stmt_ticket->execute([
+                            ':dateTimeCancelTransmission' => $params['dateTimeCancelTransmission'],
+                            ':dateTimeTransaction' => $params['dateTimeTransaction'],
+                            ':originalDataElements' => $params['originalDataElements'],
+                            ':sysRetRefNumber' => $params['sysRetRefNumber'],
+                            ':idMotiveCancel' => $params['idMotiveCancel'],
+                            ':descriptionMotiveCancel' => $params['descriptionMotiveCancel'],
+                            ':ticketID' => $params['ticketID']
+                        ]);
+
+                        $sql_ticketdetails = "UPDATE ticketdetails SET status = 'CANCEL' WHERE ticket_id = :ticket_id";
+
+                        $stmt_ticketdetails = $this->connection->prepare($sql_ticketdetails);
+                        $success_ticketdetails = $stmt_ticketdetails->execute([
+                            ':ticket_id' => $params['ticketID'] // Alterei de 'ticket_id' para 'ticketID'
+                        ]);
+
+                        if ($success_ticket && $success_ticketdetails) {
+                            $this->connection->commit();
+                            return true;
+                        } else {
+                            $this->connection->rollBack();
+                            return false;
+                        }
+                    } else {
+                        return false;
+                    }
+                } catch (Exception $e) {
+                    echo 'Erro ao decodificar o token: ' . $e->getMessage();
+                    return false;
+                }
+            } else {
+                http_response_code(401);
+                echo 'Credenciais Inválidas';
+                return false;
+            }
+        } catch (PDOException $e) {
+            echo $e->getMessage();
+            return false;
+        }
+    }
 }
