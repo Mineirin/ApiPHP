@@ -1,5 +1,4 @@
 <?php
-
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
@@ -25,14 +24,21 @@ if ($data) { // Verifica se o JSON foi recebido corretamente
             'urgencyCode' => $data['ticketDetails']['urgencyCode'],
             'partNumber' => $data['ticketDetails']['partNumber'],
             'scheduled' => $data['ticketDetails']['scheduled'],
-            'ltn' => $data['ticketDetails']['ltn'],
+            'ltn' => $data['ticketDetails']['ltn']
         ],
         'merchantDetails' => [
             'CNPJ' => $data['merchantDetails']['CNPJ'],
             'name' => $data['merchantDetails']['name'],
             'tradeName' => $data['merchantDetails']['tradeName'],
-            'address' => $data['merchantDetails']['address'],
-            'complement' => $data['merchantDetails']['complement'],
+            'address' => [
+                'street' => $data['merchantDetails']['address']['street'],
+                'number' => $data['merchantDetails']['address']['number'],
+                'neighborhood' => $data['merchantDetails']['address']['neighborhood'],
+                'zipCode' => $data['merchantDetails']['address']['zipCode'],
+                'city' => $data['merchantDetails']['address']['city'],
+                'state' => $data['merchantDetails']['address']['state'],
+                'complement' => $data['merchantDetails']['address']['complement']
+            ],
             'contactName' => $data['merchantDetails']['contactName'],
             'phone' => $data['merchantDetails']['phone'],
             'description' => $data['merchantDetails']['description'],
@@ -54,8 +60,7 @@ if ($data) { // Verifica se o JSON foi recebido corretamente
                 'wednesday' => $data['merchantDetails']['maintenanceDays']['wednesday'],
                 'thursday' => $data['merchantDetails']['maintenanceDays']['thursday'],
                 'friday' => $data['merchantDetails']['maintenanceDays']['friday'],
-                'saturday' => $data['merchantDetails']['maintenanceDays']['saturday'],
-                'workday' => $data['merchantDetails']['maintenanceDays']['workday'],
+                'saturday' => $data['merchantDetails']['maintenanceDays']['saturday']
             ]
         ],
         'originalDataElements' => $data['originalDataElements'],
