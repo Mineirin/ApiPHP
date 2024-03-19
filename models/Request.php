@@ -47,6 +47,7 @@ class Request
     public $ltn;
     public $technology;
     public $serviceProvider;
+    public $serialNumberOld;
     public $modal;
     public $connectivity;
     public $accessories;
@@ -69,7 +70,6 @@ class Request
     public $origin;
     public $scheduled;
     public $countSchedule;
-    public $terminalPaymentInfo;
     public $totalValue;
     public $businessType;
     public $paymentType;
@@ -86,7 +86,12 @@ class Request
     public $CNPJ;
     public $name;
     public $tradeName;
-    public $address;
+    public $street;
+    public $number;
+    public $neighborhood;
+    public $zipCode;
+    public $city;
+    public $state;
     public $complement;
     public $contactName;
     public $phone;
@@ -142,6 +147,8 @@ class Request
      */
     public function auth()
     {
+
+
         try {
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $jsonData = json_decode(file_get_contents("php://input"));
@@ -214,7 +221,6 @@ class Request
             return null;
         }
     }
-
     /**
      * @OA\Post(
      *     path="/api/Order",
@@ -263,7 +269,6 @@ class Request
      *                 @OA\Property(property="origin", type="string"),
      *                 @OA\Property(property="scheduled", type="string"),
      *                 @OA\Property(property="countSchedule", type="string"),
-     *                 @OA\Property(property="terminalPaymentInfo", type="string"),
      *                 @OA\Property(property="totalValue", type="string"),
      *                 @OA\Property(property="businessType", type="string"),
      *                 @OA\Property(property="paymentType", type="string"),
@@ -280,8 +285,15 @@ class Request
      *                 @OA\Property(property="CNPJ", type="string"),
      *                 @OA\Property(property="name", type="string"),
      *                 @OA\Property(property="tradeName", type="string"),
-     *                 @OA\Property(property="address", type="string"),
-     *                 @OA\Property(property="complement", type="string"),
+     *                 @OA\Property(property="address", type="object",
+     *                     @OA\Property(property="street", type="string"),
+     *                     @OA\Property(property="number", type="string"),
+     *                     @OA\Property(property="neighborhood", type="string"),
+     *                     @OA\Property(property="zipCode", type="string"),
+     *                     @OA\Property(property="city", type="string"),
+     *                     @OA\Property(property="state", type="string"),
+     *                     @OA\Property(property="complement", type="string"),
+     *                 ),
      *                 @OA\Property(property="contactName", type="string"),
      *                 @OA\Property(property="phone", type="string"),
      *                 @OA\Property(property="description", type="string"),
@@ -385,7 +397,6 @@ class Request
                         $this->origin = $params['ticketDetails']['origin'];
                         $this->scheduled = $params['ticketDetails']['scheduled'];
                         $this->countSchedule = $params['ticketDetails']['countSchedule'];
-                        $this->terminalPaymentInfo = $params['ticketDetails']['terminalPaymentInfo'];
                         $this->totalValue = $params['ticketDetails']['totalValue'];
                         $this->businessType = $params['ticketDetails']['businessType'];
                         $this->paymentType = $params['ticketDetails']['paymentType'];
@@ -403,8 +414,8 @@ class Request
                                   specialConditions = :specialConditions, freeFieldAdvancedPost = :freeFieldAdvancedPost, 
                                   motive = :motive, reasonMaintenance = :reasonMaintenance, motiveReschedule = :motiveReschedule, 
                                   recurrenceInfo = :recurrenceInfo, origin = :origin, scheduled = :scheduled, countSchedule = :countSchedule, 
-                                  terminalPaymentInfo = :terminalPaymentInfo, totalValue = :totalValue, businessType = :businessType, 
-                                  paymentType = :paymentType, paIdentification = :paIdentification, slaInOut = :slaInOut';
+                                  totalValue = :totalValue, businessType = :businessType, paymentType = :paymentType, paIdentification = :paIdentification, 
+                                  slaInOut = :slaInOut';
 
                         $tdPost = $this->connection->prepare($queryTD);
                         $tdPost->bindValue('ticket_id', $ticket_id);
@@ -441,7 +452,6 @@ class Request
                         $tdPost->bindValue('origin', $this->origin);
                         $tdPost->bindValue('scheduled', $this->scheduled);
                         $tdPost->bindValue('countSchedule', $this->countSchedule);
-                        $tdPost->bindValue('terminalPaymentInfo', $this->terminalPaymentInfo);
                         $tdPost->bindValue('totalValue', $this->totalValue);
                         $tdPost->bindValue('businessType', $this->businessType);
                         $tdPost->bindValue('paymentType', $this->paymentType);
@@ -467,8 +477,6 @@ class Request
                         $this->CNPJ = $params['merchantDetails']['CNPJ'];
                         $this->name = $params['merchantDetails']['name'];
                         $this->tradeName = $params['merchantDetails']['tradeName'];
-                        $this->address = $params['merchantDetails']['address'];
-                        $this->complement = $params['merchantDetails']['complement'];
                         $this->contactName = $params['merchantDetails']['contactName'];
                         $this->phone = $params['merchantDetails']['phone'];
                         $this->description = $params['merchantDetails']['description'];
@@ -476,8 +484,7 @@ class Request
                         $this->notes = $params['merchantDetails']['notes'];
 
                         $queryMD = 'INSERT INTO merchantdetails SET merchantID = :merchantID, ticket_id = :ticket_id, CNPJ = :CNPJ, 
-                                name = :name, tradeName = :tradeName, address = :address, 
-                                complement = :complement, contactName = :contactName, phone = :phone, 
+                                name = :name, tradeName = :tradeName, contactName = :contactName, phone = :phone, 
                                 description = :description, geolocation = :geolocation, notes = :notes';
 
                         $mdPost = $this->connection->prepare($queryMD);
@@ -486,8 +493,6 @@ class Request
                         $mdPost->bindValue('CNPJ', $this->CNPJ);
                         $mdPost->bindValue('name', $this->name);
                         $mdPost->bindValue('tradeName', $this->tradeName);
-                        $mdPost->bindValue('address', $this->address);
-                        $mdPost->bindValue('complement', $this->complement);
                         $mdPost->bindValue('contactName', $this->contactName);
                         $mdPost->bindValue('phone', $this->phone);
                         $mdPost->bindValue('description', $this->description);
@@ -496,6 +501,29 @@ class Request
                         $mdPost->execute();
 
                         $merchant_id = $this->connection->lastInsertId();
+
+                        $this->street = $params['merchantDetails']['address']['street'];
+                        $this->number = $params['merchantDetails']['address']['number'];
+                        $this->neighborhood = $params['merchantDetails']['address']['neighborhood'];
+                        $this->zipCode = $params['merchantDetails']['address']['zipCode'];
+                        $this->city = $params['merchantDetails']['address']['city'];
+                        $this->state = $params['merchantDetails']['address']['state'];
+                        $this->complement = $params['merchantDetails']['address']['complement'];
+
+                        $queryAddress = 'INSERT INTO merchantAddress SET merchant_id = :merchant_id, street = :street, 
+                                            number = :number, neighborhood = :neighborhood, 
+                                            zipCode = :zipCode, city = :city, state = :state, complement = :complement';
+                        $addressPost = $this->connection->prepare($queryAddress);
+                        $addressPost->bindValue('merchant_id', $merchant_id);
+                        $addressPost->bindValue('street', $this->street);
+                        $addressPost->bindValue('number', $this->number);
+                        $addressPost->bindValue('neighborhood', $this->neighborhood);
+                        $addressPost->bindValue('zipCode', $this->zipCode);
+                        $addressPost->bindValue('city', $this->city);
+                        $addressPost->bindValue('state', $this->state);
+                        $addressPost->bindValue('complement', $this->complement);
+                        $addressPost->execute();
+
 
                         $this->sunday = $params['merchantDetails']['workDays']['sunday'];
                         $this->monday = $params['merchantDetails']['workDays']['monday'];
@@ -564,7 +592,7 @@ class Request
     }
 
     /**
-     * @OA\Put(
+     * @OA\Post(
      *     path="/api/Update_order",
      *      summary="Editar dados",
      *      tags={"Posts"},
@@ -585,8 +613,15 @@ class Request
      *                 @OA\Property(property="CNPJ", type="string"),
      *                 @OA\Property(property="name", type="string"),
      *                 @OA\Property(property="tradeName", type="string"),
-     *                 @OA\Property(property="address", type="string"),
-     *                 @OA\Property(property="complement", type="string"),
+     *                 @OA\Property(property="address", type="object",
+     *                     @OA\Property(property="street", type="string"),
+     *                     @OA\Property(property="number", type="string"),
+     *                     @OA\Property(property="neighborhood", type="string"),
+     *                     @OA\Property(property="zipCode", type="string"),
+     *                     @OA\Property(property="city", type="string"),
+     *                     @OA\Property(property="state", type="string"),
+     *                     @OA\Property(property="complement", type="string"),
+     *                 ),
      *                 @OA\Property(property="contactName", type="string"),
      *                 @OA\Property(property="phone", type="string"),
      *                 @OA\Property(property="description", type="string"),
@@ -609,7 +644,6 @@ class Request
      *                     @OA\Property(property="thursday", type="string"),
      *                     @OA\Property(property="friday", type="string"),
      *                     @OA\Property(property="saturday", type="string"),
-     *                     @OA\Property(property="workday", type="string"),
      *                 ),
      *             ),
      *             @OA\Property(property="originalDataElements", type="string"),
@@ -626,226 +660,97 @@ class Request
     public function update_order($params)
     {
         try {
-            $headers = apache_request_headers();
-
+            $headers = getallheaders();
+    
             if (isset($headers['Authorization'])) {
                 $token = trim(str_ireplace('Bearer', '', $headers['Authorization']));
-                $decoded = JWT::decode($token, new Key($this->key, 'HS256'));
-
-                if (isset($decoded->userName)) {
-                    $this->ticketID = $params['ticketID'];
-                    $this->originalDataElements = $params['originalDataElements'];
-
-                    $query = 'UPDATE ticket SET originalDataElements = :originalDataElements WHERE ticketID = :ticketID';
-                    $ticketPost = $this->connection->prepare($query);
-                    $ticketPost->bindValue('ticketID', $this->ticketID);
-                    $ticketPost->bindValue('originalDataElements', $this->originalDataElements);
-                    $ticketPost->execute();
-
-                    $this->institutionNumber = $params['ticketDetails']['institution']['institutionNumber'];
-                    $this->institutionName = $params['ticketDetails']['institution']['institutionName'];
-                    $this->institutionContractID = $params['ticketDetails']['institution']['institutionContractID'];
-
-                    $queryInst = 'UPDATE institution SET institutionNumber = :institutionNumber, institutionName = :institutionName, institutionContractID = :institutionContractID WHERE ticket_id = :ticket_id';
-                    $instPost = $this->connection->prepare($queryInst);
-                    $instPost->bindValue('ticket_id', $this->ticketID);
-                    $instPost->bindValue('institutionNumber', $this->institutionNumber);
-                    $instPost->bindValue('institutionName', $this->institutionName);
-                    $instPost->bindValue('institutionContractID', $this->institutionContractID);
-                    $instPost->execute();
-
-                    $this->createDate = $params['ticketDetails']['createDate'];
-                    $this->status = $params['ticketDetails']['status'];
-                    $this->channel = $params['ticketDetails']['channel'];
-                    $this->channelType = $params['ticketDetails']['channelType'];
-                    $this->subChannel = $params['ticketDetails']['subChannel'];
-                    $this->agentName = $params['ticketDetails']['agentName'];
-                    $this->type = $params['ticketDetails']['type'];
-                    $this->ltn = $params['ticketDetails']['ltn'];
-                    $this->technology = $params['ticketDetails']['technology'];
-                    $this->serviceProvider = $params['ticketDetails']['serviceProvider'];
-                    $this->modal = $params['ticketDetails']['modal'];
-                    $this->connectivity = $params['ticketDetails']['connectivity'];
-                    $this->accessories = $params['ticketDetails']['accessories'];
-                    $this->urgencyCode = $params['ticketDetails']['urgencyCode'];
-                    $this->sla = $params['ticketDetails']['sla'];
-                    $this->partNumber = $params['ticketDetails']['partNumber'];
-                    $this->mobileOperator = $params['ticketDetails']['mobileOperator'];
-                    $this->selected = $params['ticketDetails']['selected'];
-                    $this->heatMap = $params['ticketDetails']['heatMap'];
-                    $this->agingEquipment = $params['ticketDetails']['agingEquipment'];
-                    $this->productSerialInstall = $params['ticketDetails']['productSerialInstall'];
-                    $this->productSerialUninstall = $params['ticketDetails']['productSerialUninstall'];
-                    $this->immediateDelivery = $params['ticketDetails']['immediateDelivery'];
-                    $this->specialConditions = $params['ticketDetails']['specialConditions'];
-                    $this->freeFieldAdvancedPost = $params['ticketDetails']['freeFieldAdvancedPost'];
-                    $this->motive = $params['ticketDetails']['motive'];
-                    $this->reasonMaintenance = $params['ticketDetails']['reasonMaintenance'];
-                    $this->motiveReschedule = $params['ticketDetails']['motiveReschedule'];
-                    $this->recurrenceInfo = $params['ticketDetails']['recurrenceInfo'];
-                    $this->origin = $params['ticketDetails']['origin'];
-                    $this->scheduled = $params['ticketDetails']['scheduled'];
-                    $this->countSchedule = $params['ticketDetails']['countSchedule'];
-                    $this->terminalPaymentInfo = $params['ticketDetails']['terminalPaymentInfo'];
-                    $this->totalValue = $params['ticketDetails']['totalValue'];
-                    $this->businessType = $params['ticketDetails']['businessType'];
-                    $this->paymentType = $params['ticketDetails']['paymentType'];
-                    $this->paIdentification = $params['ticketDetails']['paIdentification'];
-                    $this->slaInOut = $params['ticketDetails']['slaInOut'];
-
-                    $queryTD = 'UPDATE ticketdetails SET createDate = :createDate, status = :status, 
-                              channel = :channel, channelType = :channelType, subChannel = :subChannel, 
-                              agentName = :agentName, type = :type, ltn = :ltn, technology = :technology, 
-                              serviceProvider = :serviceProvider, modal = :modal, connectivity = :connectivity, 
-                              accessories = :accessories, urgencyCode = :urgencyCode, sla = :sla, partNumber = :partNumber, 
-                              mobileOperator = :mobileOperator, selected = :selected, heatMap = :heatMap, 
-                              agingEquipment = :agingEquipment, productSerialInstall = :productSerialInstall, 
-                              productSerialUninstall = :productSerialUninstall, immediateDelivery = :immediateDelivery, 
-                              specialConditions = :specialConditions, freeFieldAdvancedPost = :freeFieldAdvancedPost, 
-                              motive = :motive, reasonMaintenance = :reasonMaintenance, motiveReschedule = :motiveReschedule, 
-                              recurrenceInfo = :recurrenceInfo, origin = :origin, scheduled = :scheduled, countSchedule = :countSchedule, 
-                              terminalPaymentInfo = :terminalPaymentInfo, totalValue = :totalValue, businessType = :businessType, 
-                              paymentType = :paymentType, paIdentification = :paIdentification, slaInOut = :slaInOut WHERE ticket_id = :ticket_id';
-
-                    $tdPost = $this->connection->prepare($queryTD);
-                    $tdPost->bindValue('ticket_id', $this->ticketID);
-                    $tdPost->bindValue('createDate', $this->createDate);
-                    $tdPost->bindValue('status', $this->status);
-                    $tdPost->bindValue('channel', $this->channel);
-                    $tdPost->bindValue('channelType', $this->channelType);
-                    $tdPost->bindValue('subChannel', $this->subChannel);
-                    $tdPost->bindValue('agentName', $this->agentName);
-                    $tdPost->bindValue('type', $this->type);
-                    $tdPost->bindValue('ltn', $this->ltn);
-                    $tdPost->bindValue('technology', $this->technology);
-                    $tdPost->bindValue('serviceProvider', $this->serviceProvider);
-                    $tdPost->bindValue('modal', $this->modal);
-                    $tdPost->bindValue('connectivity', $this->connectivity);
-                    $tdPost->bindValue('accessories', $this->accessories);
-                    $tdPost->bindValue('urgencyCode', $this->urgencyCode);
-                    $tdPost->bindValue('sla', $this->sla);
-                    $tdPost->bindValue('partNumber', $this->partNumber);
-                    $tdPost->bindValue('mobileOperator', $this->mobileOperator);
-                    $tdPost->bindValue('selected', $this->selected);
-                    $tdPost->bindValue('heatMap', $this->heatMap);
-                    $tdPost->bindValue('agingEquipment', $this->agingEquipment);
-                    $tdPost->bindValue('productSerialInstall', $this->productSerialInstall);
-                    $tdPost->bindValue('productSerialUninstall', $this->productSerialUninstall);
-                    $tdPost->bindValue('immediateDelivery', $this->immediateDelivery);
-                    $tdPost->bindValue('specialConditions', $this->specialConditions);
-                    $tdPost->bindValue('freeFieldAdvancedPost', $this->freeFieldAdvancedPost);
-                    $tdPost->bindValue('motive', $this->motive);
-                    $tdPost->bindValue('reasonMaintenance', $this->reasonMaintenance);
-                    $tdPost->bindValue('motiveReschedule', $this->motiveReschedule);
-                    $tdPost->bindValue('recurrenceInfo', $this->recurrenceInfo);
-                    $tdPost->bindValue('origin', $this->origin);
-                    $tdPost->bindValue('scheduled', $this->scheduled);
-                    $tdPost->bindValue('countSchedule', $this->countSchedule);
-                    $tdPost->bindValue('terminalPaymentInfo', $this->terminalPaymentInfo);
-                    $tdPost->bindValue('totalValue', $this->totalValue);
-                    $tdPost->bindValue('businessType', $this->businessType);
-                    $tdPost->bindValue('paymentType', $this->paymentType);
-                    $tdPost->bindValue('paIdentification', $this->paIdentification);
-                    $tdPost->bindValue('slaInOut', $this->slaInOut);
-                    $tdPost->execute();
-
-                    $this->clusterID = $params['cluster']['clusterID'];
-                    $this->agingEquipment_cluster = $params['cluster']['agingEquipment'];
-                    $this->additionalInfo = $params['cluster']['additionalInfo'];
-
-                    $queryCluster = 'UPDATE cluster SET clusterID = :clusterID, agingEquipment = :agingEquipment, additionalInfo = :additionalInfo WHERE ticket_id = :ticket_id';
-                    $clusterPost = $this->connection->prepare($queryCluster);
-                    $clusterPost->bindValue('ticket_id', $this->ticketID);
-                    $clusterPost->bindValue('clusterID', $this->clusterID);
-                    $clusterPost->bindValue('agingEquipment', $this->agingEquipment_cluster);
-                    $clusterPost->bindValue('additionalInfo', $this->additionalInfo);
-                    $clusterPost->execute();
-
-
-                    $this->merchantID = $params['merchantDetails']['merchantID'];
-                    $this->CNPJ = $params['merchantDetails']['CNPJ'];
-                    $this->name = $params['merchantDetails']['name'];
-                    $this->tradeName = $params['merchantDetails']['tradeName'];
-                    $this->address = $params['merchantDetails']['address'];
-                    $this->complement = $params['merchantDetails']['complement'];
-                    $this->contactName = $params['merchantDetails']['contactName'];
-                    $this->phone = $params['merchantDetails']['phone'];
-                    $this->description = $params['merchantDetails']['description'];
-                    $this->geolocation = $params['merchantDetails']['geolocation'];
-                    $this->notes = $params['merchantDetails']['notes'];
-
-                    $queryMD = 'UPDATE merchantdetails SET merchantID = :merchantID, CNPJ = :CNPJ, 
-                            name = :name, tradeName = :tradeName, address = :address, 
-                            complement = :complement, contactName = :contactName, phone = :phone, 
-                            description = :description, geolocation = :geolocation, notes = :notes WHERE ticket_id = :ticket_id';
-
-                    $mdPost = $this->connection->prepare($queryMD);
-                    $mdPost->bindValue('ticket_id', $this->ticketID);
-                    $mdPost->bindValue('merchantID', $this->merchantID);
-                    $mdPost->bindValue('CNPJ', $this->CNPJ);
-                    $mdPost->bindValue('name', $this->name);
-                    $mdPost->bindValue('tradeName', $this->tradeName);
-                    $mdPost->bindValue('address', $this->address);
-                    $mdPost->bindValue('complement', $this->complement);
-                    $mdPost->bindValue('contactName', $this->contactName);
-                    $mdPost->bindValue('phone', $this->phone);
-                    $mdPost->bindValue('description', $this->description);
-                    $mdPost->bindValue('geolocation', $this->geolocation);
-                    $mdPost->bindValue('notes', $this->notes);
-                    $mdPost->execute();
-
-                    $merchant_id = $this->ticketID;
-
-                    $this->sunday = $params['merchantDetails']['workDays']['sunday'];
-                    $this->monday = $params['merchantDetails']['workDays']['monday'];
-                    $this->tuesday = $params['merchantDetails']['workDays']['tuesday'];
-                    $this->wednesday = $params['merchantDetails']['workDays']['wednesday'];
-                    $this->thursday = $params['merchantDetails']['workDays']['thursday'];
-                    $this->friday = $params['merchantDetails']['workDays']['friday'];
-                    $this->saturday = $params['merchantDetails']['workDays']['saturday'];
-
-                    $queryWorkDays = 'UPDATE workdays SET sunday = :sunday, monday = :monday, 
-                            tuesday = :tuesday, wednesday = :wednesday, thursday = :thursday, 
-                            friday = :friday, saturday = :saturday WHERE merchant_id = :merchant_id';
-                    $wdPost = $this->connection->prepare($queryWorkDays);
-
-                    $wdPost->bindValue('merchant_id', $merchant_id);
-                    $wdPost->bindValue('sunday', $this->sunday);
-                    $wdPost->bindValue('monday', $this->monday);
-                    $wdPost->bindValue('tuesday', $this->tuesday);
-                    $wdPost->bindValue('wednesday', $this->wednesday);
-                    $wdPost->bindValue('thursday', $this->thursday);
-                    $wdPost->bindValue('friday', $this->friday);
-                    $wdPost->bindValue('saturday', $this->saturday);
-                    $wdPost->execute();
-
-                    $this->md_sunday = $params['merchantDetails']['maintenanceDays']['sunday'];
-                    $this->md_monday = $params['merchantDetails']['maintenanceDays']['monday'];
-                    $this->md_tuesday = $params['merchantDetails']['maintenanceDays']['tuesday'];
-                    $this->md_wednesday = $params['merchantDetails']['maintenanceDays']['wednesday'];
-                    $this->md_thursday = $params['merchantDetails']['maintenanceDays']['thursday'];
-                    $this->md_friday = $params['merchantDetails']['maintenanceDays']['friday'];
-                    $this->md_saturday = $params['merchantDetails']['maintenanceDays']['saturday'];
-                    $this->md_workday = $params['merchantDetails']['maintenanceDays']['workday'];
-
-                    $queryMainDays = 'UPDATE maintenancedays SET sunday = :sunday, monday = :monday, 
-                            tuesday = :tuesday, wednesday = :wednesday, thursday = :thursday, 
-                            friday = :friday, saturday = :saturday, workday = :workday WHERE merchant_id = :merchant_id';
-
-                    $mainDaysPost = $this->connection->prepare($queryMainDays);
-                    $mainDaysPost->bindValue('merchant_id', $merchant_id);
-                    $mainDaysPost->bindValue('sunday', $this->md_sunday);
-                    $mainDaysPost->bindValue('monday', $this->md_monday);
-                    $mainDaysPost->bindValue('tuesday', $this->md_tuesday);
-                    $mainDaysPost->bindValue('wednesday', $this->md_wednesday);
-                    $mainDaysPost->bindValue('thursday', $this->md_thursday);
-                    $mainDaysPost->bindValue('friday', $this->md_friday);
-                    $mainDaysPost->bindValue('saturday', $this->md_saturday);
-                    $mainDaysPost->bindValue('workday', $this->md_workday);
-                    $mainDaysPost->execute();
-
-                    return true;
-                } else {
+                try {
+                    $decoded = JWT::decode($token, new Key($this->key, 'HS256'));
+                    if (isset($decoded->userName)) {
+                        $this->connection->beginTransaction();
+    
+                        // Update ticket table
+                        $query = 'UPDATE ticket SET originalDataElements = :originalDataElements, sysRetRefNumber = :sysRetRefNumber, info = :info WHERE ticketID = :ticketID';
+                        $ticketPost = $this->connection->prepare($query);
+                        $ticketPost->bindValue('originalDataElements', $params['originalDataElements']);
+                        $ticketPost->bindValue('sysRetRefNumber', $params['sysRetRefNumber']);
+                        $ticketPost->bindValue('info', $params['info']);
+                        $ticketPost->bindValue('ticketID', $params['ticketID']);
+                        $ticketPost->execute();
+    
+                        // Update ticketdetails table
+                        $queryTD = 'UPDATE ticketdetails SET serviceProvider = :serviceProvider, serialNumberOld = :serialNumberOld, partNumber = :partNumber, ltn = :ltn, urgencyCode = :urgencyCode, scheduled = :scheduled WHERE ticket_id = :ticketID';
+                        $tdPost = $this->connection->prepare($queryTD);
+                        $tdPost->bindValue('serviceProvider', $params['ticketDetails']['serviceProvider']);
+                        $tdPost->bindValue('serialNumberOld', $params['ticketDetails']['serialNumberOld']);
+                        $tdPost->bindValue('partNumber', $params['ticketDetails']['partNumber']);
+                        $tdPost->bindValue('ltn', $params['ticketDetails']['ltn']);
+                        $tdPost->bindValue('urgencyCode', $params['ticketDetails']['urgencyCode']);
+                        $tdPost->bindValue('scheduled', $params['ticketDetails']['scheduled']);
+                        $tdPost->bindValue('ticketID', $params['ticketID']);
+                        $tdPost->execute();
+    
+                        // Update merchantdetails table
+                        $queryMD = 'UPDATE merchantdetails SET CNPJ = :CNPJ, name = :name, tradeName = :tradeName, contactName = :contactName, phone = :phone, description = :description, geolocation = :geolocation, notes = :notes WHERE ticket_id = :ticketID';
+                        $mdPost = $this->connection->prepare($queryMD);
+                        $mdPost->bindValue('CNPJ', $params['merchantDetails']['CNPJ']);
+                        $mdPost->bindValue('name', $params['merchantDetails']['name']);
+                        $mdPost->bindValue('tradeName', $params['merchantDetails']['tradeName']);
+                        $mdPost->bindValue('contactName', $params['merchantDetails']['contactName']);
+                        $mdPost->bindValue('phone', $params['merchantDetails']['phone']);
+                        $mdPost->bindValue('description', $params['merchantDetails']['description']);
+                        $mdPost->bindValue('geolocation', $params['merchantDetails']['geolocation']);
+                        $mdPost->bindValue('notes', $params['merchantDetails']['notes']);
+                        $mdPost->bindValue('ticketID', $params['ticketID']);
+                        $mdPost->execute();
+    
+                        // Update merchantAddress table
+                        $queryAddress = 'UPDATE merchantAddress SET street = :street, number = :number, neighborhood = :neighborhood, zipCode = :zipCode, city = :city, state = :state, complement = :complement WHERE merchant_id = :merchantID';
+                        $addressPost = $this->connection->prepare($queryAddress);
+                        $addressPost->bindValue('street', $params['merchantDetails']['address']['street']);
+                        $addressPost->bindValue('number', $params['merchantDetails']['address']['number']);
+                        $addressPost->bindValue('neighborhood', $params['merchantDetails']['address']['neighborhood']);
+                        $addressPost->bindValue('zipCode', $params['merchantDetails']['address']['zipCode']);
+                        $addressPost->bindValue('city', $params['merchantDetails']['address']['city']);
+                        $addressPost->bindValue('state', $params['merchantDetails']['address']['state']);
+                        $addressPost->bindValue('complement', $params['merchantDetails']['address']['complement']);
+                        $addressPost->bindValue('merchantID', $params['ticketID']);
+                        $addressPost->execute();
+    
+                        // Update workdays table
+                        $queryWD = 'UPDATE workdays SET sunday = :sunday, monday = :monday, tuesday = :tuesday, wednesday = :wednesday, thursday = :thursday, friday = :friday, saturday = :saturday WHERE merchant_id = :merchantID';
+                        $wdPost = $this->connection->prepare($queryWD);
+                        $wdPost->bindValue('sunday', $params['merchantDetails']['workDays']['sunday']);
+                        $wdPost->bindValue('monday', $params['merchantDetails']['workDays']['monday']);
+                        $wdPost->bindValue('tuesday', $params['merchantDetails']['workDays']['tuesday']);
+                        $wdPost->bindValue('wednesday', $params['merchantDetails']['workDays']['wednesday']);
+                        $wdPost->bindValue('thursday', $params['merchantDetails']['workDays']['thursday']);
+                        $wdPost->bindValue('friday', $params['merchantDetails']['workDays']['friday']);
+                        $wdPost->bindValue('saturday', $params['merchantDetails']['workDays']['saturday']);
+                        $wdPost->bindValue('merchantID', $params['ticketID']);
+                        $wdPost->execute();
+    
+                        // Update maintenancedays table
+                        $queryMDays = 'UPDATE maintenancedays SET sunday = :sunday, monday = :monday, tuesday = :tuesday, wednesday = :wednesday, thursday = :thursday, friday = :friday, saturday = :saturday WHERE merchant_id = :merchantID';
+                        $mdaysPost = $this->connection->prepare($queryMDays);
+                        $mdaysPost->bindValue('sunday', $params['merchantDetails']['maintenanceDays']['sunday']);
+                        $mdaysPost->bindValue('monday', $params['merchantDetails']['maintenanceDays']['monday']);
+                        $mdaysPost->bindValue('tuesday', $params['merchantDetails']['maintenanceDays']['tuesday']);
+                        $mdaysPost->bindValue('wednesday', $params['merchantDetails']['maintenanceDays']['wednesday']);
+                        $mdaysPost->bindValue('thursday', $params['merchantDetails']['maintenanceDays']['thursday']);
+                        $mdaysPost->bindValue('friday', $params['merchantDetails']['maintenanceDays']['friday']);
+                        $mdaysPost->bindValue('saturday', $params['merchantDetails']['maintenanceDays']['saturday']);
+                        $mdaysPost->bindValue('merchantID', $params['ticketID']);
+                        $mdaysPost->execute();
+    
+                        $this->connection->commit();
+    
+                        return true;
+                    } else {
+                        return false;
+                    }
+                } catch (Exception $e) {
+                    echo 'Erro ao decodificar o token: ' . $e->getMessage();
                     return false;
                 }
             } else {
@@ -857,9 +762,9 @@ class Request
             echo $e->getMessage();
             return false;
         }
-    }
+    }    
 
-     /**
+    /**
      * @OA\Post(
      *     path="/api/Cancel",
      *     summary="Cancela tickets",
@@ -946,7 +851,6 @@ class Request
             return false;
         }
     }
-
     /**
      * @OA\Post(
      *     path="/api/Upgrade",
